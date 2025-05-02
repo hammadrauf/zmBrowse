@@ -84,64 +84,68 @@ partial class mainForm
         {
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                rFolder = dialog.SelectedPath;
-                txtFolderPath.Text = rFolder;
-
-                // Get all sub-folder names, sort them, and populate the ComboBox
-                string[] subFolders = Directory.GetDirectories(rFolder);
-                List<string> folderNames = subFolders.Select(Path.GetFileName).OrderBy(name => name).ToList();
-
-                comboBoxCameraNameFolder.Items.Clear(); // Clear existing items
-                comboBoxCameraNameFolder.Items.AddRange(folderNames.ToArray());
-
-                if (folderNames.Count > 0)
-                {
-                    comboBoxCameraNameFolder.SelectedIndex = 0; // Set the first sub-folder as the default selection
-                }
-
-                // Get the selected cameraNameFolder
-                string cameraNameFolder = comboBoxCameraNameFolder.SelectedItem?.ToString();
-                if (!string.IsNullOrEmpty(cameraNameFolder))
-                {
-                    string cameraFolderPath = Path.Combine(rFolder, cameraNameFolder);
-
-                    // Get all sub-sub-folder names, sort them, and populate the CheckedListBox
-                    string[] dateFolders = Directory.GetDirectories(cameraFolderPath);
-                    List<string> dateFolderNames = dateFolders.Select(Path.GetFileName).OrderBy(name => name).ToList();
-
-                    clbDateFolders.Items.Clear(); // Clear existing items
-                    clbDateFolders.Items.AddRange(dateFolderNames.ToArray());
-
-                    // Select all items by default
-                    //for (int i = 0; i < clbDateFolders.Items.Count; i++)
-                    //{
-                    //    clbDateFolders.SetItemChecked(i, true);
-                    //}
-
-                    // Select today folder by default
-                    string todayFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                    if (clbDateFolders.Items.Contains(todayFolder))
-                    {
-                        // Select the today folder
-                        clbDateFolders.SetItemChecked(clbDateFolders.Items.IndexOf(todayFolder), true);
-                    }
-                    else if(clbDateFolders.Items.Count == 0)
-                    {
-                        // Select the first folder
-                        clbDateFolders.SetItemChecked(0, true);
-                    }
-                    else if (clbDateFolders.Items.Count > 1)
-                    {
-                        // Select the last folder
-                        clbDateFolders.SetItemChecked(clbDateFolders.Items.Count-1, true);
-                    }
-
-                    // Get the current checked items
-                    var checkedItems = clbDateFolders.CheckedItems.Cast<string>().ToList();
-                    // Call the core method
-                    UpdateSelectedDateFolders_Core(checkedItems);
-                }
+                ProcessSelectedFolder_Core(dialog);
             }
+        }
+    }
+
+    private void ProcessSelectedFolder_Core(FolderBrowserDialog dialog)
+    {
+        if (dialog == null)
+            rFolder = "\\\\192.168.4.5\\ZM_Events";
+        else if (string.IsNullOrEmpty(dialog.SelectedPath))
+            rFolder = System.IO.Path.GetTempPath();
+        else
+            rFolder = dialog.SelectedPath;
+        txtFolderPath.Text = rFolder;
+
+        // Get all sub-folder names, sort them, and populate the ComboBox
+        string[] subFolders = Directory.GetDirectories(rFolder);
+        List<string> folderNames = subFolders.Select(Path.GetFileName).OrderBy(name => name).ToList();
+
+        comboBoxCameraNameFolder.Items.Clear(); // Clear existing items
+        comboBoxCameraNameFolder.Items.AddRange(folderNames.ToArray());
+
+        if (folderNames.Count > 0)
+        {
+            comboBoxCameraNameFolder.SelectedIndex = 0; // Set the first sub-folder as the default selection
+        }
+
+        // Get the selected cameraNameFolder
+        string cameraNameFolder = comboBoxCameraNameFolder.SelectedItem?.ToString();
+        if (!string.IsNullOrEmpty(cameraNameFolder))
+        {
+            string cameraFolderPath = Path.Combine(rFolder, cameraNameFolder);
+
+            // Get all sub-sub-folder names, sort them, and populate the CheckedListBox
+            string[] dateFolders = Directory.GetDirectories(cameraFolderPath);
+            List<string> dateFolderNames = dateFolders.Select(Path.GetFileName).OrderBy(name => name).ToList();
+
+            clbDateFolders.Items.Clear(); // Clear existing items
+            clbDateFolders.Items.AddRange(dateFolderNames.ToArray());
+
+            // Select today folder by default
+            string todayFolder = DateTime.Now.ToString("yyyy-MM-dd");
+            if (clbDateFolders.Items.Contains(todayFolder))
+            {
+                // Select the today folder
+                clbDateFolders.SetItemChecked(clbDateFolders.Items.IndexOf(todayFolder), true);
+            }
+            else if (clbDateFolders.Items.Count == 0)
+            {
+                // Select the first folder
+                clbDateFolders.SetItemChecked(0, true);
+            }
+            else if (clbDateFolders.Items.Count > 1)
+            {
+                // Select the last folder
+                clbDateFolders.SetItemChecked(clbDateFolders.Items.Count - 1, true);
+            }
+
+            // Get the current checked items
+            var checkedItems = clbDateFolders.CheckedItems.Cast<string>().ToList();
+            // Call the core method
+            UpdateSelectedDateFolders_Core(checkedItems);
         }
     }
 
@@ -151,20 +155,6 @@ partial class mainForm
         evEnd = (int)numericUpDownEnd.Value;
 
         flowLayoutPanelThumbnails.Controls.Clear();
-
-        //for (int i = evStart; i <= evEnd; i++)
-        //{
-        //    string eventFolder = Path.Combine(rFolder, i.ToString());
-        //    string videoPath = Path.Combine(eventFolder, $"{i}-video.mp4");
-        //    if (File.Exists(videoPath))
-        //    {
-        //        PictureBox pictureBox = CreateThumbnail(videoPath, eventFolder, $"{i}.png");
-        //        if (pictureBox != null)
-        //        {
-        //            flowLayoutPanelThumbnails.Controls.Add(pictureBox);
-        //        }
-        //    }
-        //}
 
         foreach(var dateFolder in selectedDateFolders)
         {
@@ -361,7 +351,7 @@ partial class mainForm
         // Initialize buttons manually
         btnSelectFolder = new Button { Text = "Select Zone-Minder Folder", Location = new Point(10, 30) };
         btnGenerateThumbnails = new Button { Text = "Generate Thumbnails", Location = new Point(10, 210) };
-        txtFolderPath = new TextBox { Location = new Point(110, 32), Width = 500, ReadOnly = true, Text = "\\\\192.168.4.5\\ZM_Events\\1\\2025-04-22" };
+        txtFolderPath = new TextBox { Location = new Point(110, 32), Width = 500, ReadOnly = true, Text = "\\\\192.168.4.5\\ZM_Events" };
         numericUpDownStart = new NumericUpDown { Location = new Point(20, 180), Size = new Size(120, 30), Minimum = 1, Maximum = 999999, Value = 76868 };
         numericUpDownEnd = new NumericUpDown { Location = new Point(220, 180), Size = new Size(120, 30), Minimum = 1, Maximum = 999999, Value = 76894 };
         flowLayoutPanelThumbnails = new FlowLayoutPanel
@@ -449,7 +439,7 @@ partial class mainForm
         btnSelectFolder.Click += BtnSelectFolder_Click;
         btnGenerateThumbnails.Click += BtnGenerateThumbnails_Click;
 
-
+        ProcessSelectedFolder_Core(null); // Call the method to initialize the folder structure
     }
 
     #endregion
