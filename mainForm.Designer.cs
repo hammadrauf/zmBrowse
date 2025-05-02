@@ -238,7 +238,7 @@ partial class mainForm
 
                 // Add a context menu for right-click
                 ContextMenuStrip contextMenu = new ContextMenuStrip();
-                ToolStripMenuItem copyMenuItem = new ToolStripMenuItem("Copy Event Folder");
+                ToolStripMenuItem copyMenuItem = new ToolStripMenuItem("Copy Event Folder path to clipboard and open");
                 //copyMenuItem.Click += (s, e) => Clipboard.SetText(eventFolder); // Copy eventFolder to clipboard
                 copyMenuItem.Click += (s, e) =>
                 {
