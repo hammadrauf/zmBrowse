@@ -195,24 +195,50 @@ partial class mainForm
         try
         {
             string tnailName = $"{eventID}.png";
-            //string thumbnailPath = Path.Combine(eventFolder, "alarm.jpg");
-            //string thumbnailPath = Path.Combine(eventFolder, "snapshot-48x64.jpg");
-            //string thumbnailPath = Path.Combine(eventFolder, "snapshot.jpg");
             string thumbnailPath = Path.Combine(System.IO.Path.GetTempPath(), tnailName);
             var ffMpeg = new FFMpegConverter();
             ffMpeg.GetVideoThumbnail(videoPath, thumbnailPath, 1.0f);
 
-            PictureBox pictureBox = new PictureBox
+            // Load the thumbnail image
+            using (Image thumbnailImage = Image.FromFile(thumbnailPath))
             {
-                Image = Image.FromFile(thumbnailPath),
-                SizeMode = PictureBoxSizeMode.StretchImage,
-                Width = 90,
-                Height = 120,
-                Tag = videoPath
-            };
+                // Create a new bitmap to draw on
+                Bitmap bitmapWithText = new Bitmap(thumbnailImage);
 
-            pictureBox.Click += (s, e) => PlayVideo((string)pictureBox.Tag);
-            return pictureBox;
+                using (Graphics graphics = Graphics.FromImage(bitmapWithText))
+                {
+                    // Set up the font and brush for the text
+                    Font font = new Font("Arial", 72, FontStyle.Bold);
+                    Brush brush = new SolidBrush(Color.Yellow);
+
+                    // Measure the size of the text
+                    SizeF textSize = graphics.MeasureString(eventID.ToString(), font);
+
+                    // Calculate the position for the text (lower-right corner)
+                    float x = bitmapWithText.Width - textSize.Width - 5; // 5px padding from the right
+                    float y = bitmapWithText.Height - textSize.Height - 5; // 5px padding from the bottom
+
+                    // Draw the text on the image
+                    graphics.DrawString(eventID.ToString(), font, brush, x, y);
+                }
+
+                // Save the modified image back to the temporary path
+                string modifiedThumbnailPath = Path.Combine(System.IO.Path.GetTempPath(), $"modified_{tnailName}");
+                bitmapWithText.Save(modifiedThumbnailPath, ImageFormat.Png);
+
+                // Create the PictureBox with the modified image
+                PictureBox pictureBox = new PictureBox
+                {
+                    Image = Image.FromFile(modifiedThumbnailPath),
+                    SizeMode = PictureBoxSizeMode.StretchImage,
+                    Width = 90,
+                    Height = 120,
+                    Tag = videoPath
+                };
+
+                pictureBox.Click += (s, e) => PlayVideo((string)pictureBox.Tag);
+                return pictureBox;
+            }
         }
         catch (Exception ex) {
             logger.LogError("Exception when creating thumbnail.");
