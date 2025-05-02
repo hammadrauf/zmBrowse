@@ -113,9 +113,27 @@ partial class mainForm
                     clbDateFolders.Items.AddRange(dateFolderNames.ToArray());
 
                     // Select all items by default
-                    for (int i = 0; i < clbDateFolders.Items.Count; i++)
+                    //for (int i = 0; i < clbDateFolders.Items.Count; i++)
+                    //{
+                    //    clbDateFolders.SetItemChecked(i, true);
+                    //}
+
+                    // Select today folder by default
+                    string todayFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                    if (clbDateFolders.Items.Contains(todayFolder))
                     {
-                        clbDateFolders.SetItemChecked(i, true);
+                        // Select the today folder
+                        clbDateFolders.SetItemChecked(clbDateFolders.Items.IndexOf(todayFolder), true);
+                    }
+                    else if(clbDateFolders.Items.Count == 0)
+                    {
+                        // Select the first folder
+                        clbDateFolders.SetItemChecked(0, true);
+                    }
+                    else if (clbDateFolders.Items.Count > 1)
+                    {
+                        // Select the last folder
+                        clbDateFolders.SetItemChecked(clbDateFolders.Items.Count-1, true);
                     }
 
                     // Store selected folder names in a collection for further processing
@@ -189,6 +207,9 @@ partial class mainForm
 
     private void UpdateSelectedDateFolders()
     {
+        int evMin = 999999;
+        int evMax = 0;
+
         selectedDateFolders.Clear();
         foreach (var datefolder in clbDateFolders.CheckedItems.Cast<string>().ToList())
         {
@@ -196,7 +217,25 @@ partial class mainForm
             string[] subFolders = Directory.GetDirectories(dateFolderPath);
             List<string> folderNames = subFolders.Select(Path.GetFileName).OrderBy(name => name).ToList();
 
+            if (folderNames.Count > 0)
+            {
+                //if first element to int is lower then evMin
+                if (int.TryParse(folderNames[0], out int firstEventID) && firstEventID < evMin)
+                    evMin = firstEventID;
+                //if last element to int is higher then evMax
+                if (int.TryParse(folderNames[folderNames.Count - 1], out int lastEventID) && lastEventID > evMax)
+                    evMax = lastEventID;
+            }
+
             selectedDateFolders.Add(new DateFolderStructure(datefolder, dateFolderPath, folderNames));
+        }
+
+        //Update the values for numericUpDownStart and numericUpDownEnd
+        if (selectedDateFolders.Count > 0)
+        {
+            // Set the values to the first and last event IDs
+            numericUpDownStart.Value = evMin;
+            numericUpDownEnd.Value = evMax;
         }
     }
 
@@ -215,21 +254,21 @@ partial class mainForm
         this.Size = new Size(800, 800);
 
         // Initialize buttons manually
-        btnSelectFolder = new Button { Text = "Select Zone-Minder Folder", Location = new Point(10, 10) };
-        btnGenerateThumbnails = new Button { Text = "Generate Thumbnails", Location = new Point(10, 110) };
-        txtFolderPath = new TextBox { Location = new Point(110, 12), Width = 500, ReadOnly = true, Text = "\\\\192.168.4.5\\ZM_Events\\1\\2025-04-22" };
-        numericUpDownStart = new NumericUpDown { Location = new Point(20, 80), Size = new Size(120, 30), Minimum = 1, Maximum = 999999, Value = 76868 };
-        numericUpDownEnd = new NumericUpDown { Location = new Point(220, 80), Size = new Size(120, 30), Minimum = 1, Maximum = 999999, Value = 76894 };
+        btnSelectFolder = new Button { Text = "Select Zone-Minder Folder", Location = new Point(10, 30) };
+        btnGenerateThumbnails = new Button { Text = "Generate Thumbnails", Location = new Point(10, 210) };
+        txtFolderPath = new TextBox { Location = new Point(110, 32), Width = 500, ReadOnly = true, Text = "\\\\192.168.4.5\\ZM_Events\\1\\2025-04-22" };
+        numericUpDownStart = new NumericUpDown { Location = new Point(20, 180), Size = new Size(120, 30), Minimum = 1, Maximum = 999999, Value = 76868 };
+        numericUpDownEnd = new NumericUpDown { Location = new Point(220, 180), Size = new Size(120, 30), Minimum = 1, Maximum = 999999, Value = 76894 };
         flowLayoutPanelThumbnails = new FlowLayoutPanel
         {
-            Location = new Point(20, 140),
+            Location = new Point(20, 250),
             Size = new Size(750, 450),
             AutoScroll = true,
             BorderStyle = BorderStyle.FixedSingle
         };
         comboBoxCameraNameFolder = new ComboBox
         {
-            Location = new Point(20, 50), 
+            Location = new Point(20, 80), 
             Width = 120,                  
             DropDownStyle = ComboBoxStyle.DropDownList // Prevent manual text entry
         };
@@ -238,12 +277,60 @@ partial class mainForm
 
         clbDateFolders = new CheckedListBox
         {
-            Location = new Point(150, 50),
+            Location = new Point(150, 80),
             Size = new Size(200, 80),
             CheckOnClick = true 
         };
 
         clbDateFolders.ItemCheck += (s, e) => UpdateSelectedDateFolders();
+
+        // Label for txtFolderPath
+        Label lblFolderPath = new Label
+        {
+            Text = "Folder Path:",
+            Location = new Point(110, 15), // Position above txtFolderPath
+            AutoSize = true
+        };
+
+        // Label for numericUpDownStart
+        Label lblStartEventID = new Label
+        {
+            Text = "Start Event ID:",
+            Location = new Point(20, 160), // Position above numericUpDownStart
+            AutoSize = true
+        };
+
+        // Label for numericUpDownEnd
+        Label lblEndEventID = new Label
+        {
+            Text = "End Event ID:",
+            Location = new Point(220, 160), // Position above numericUpDownEnd
+            AutoSize = true
+        };
+
+        // Label for comboBoxCameraNameFolder
+        Label lblCameraName = new Label
+        {
+            Text = "Camera Name:",
+            Location = new Point(20, 60), // Position above comboBoxCameraNameFolder
+            AutoSize = true
+        };
+
+        // Label for clbDateFolders
+        Label lblDateFolders = new Label
+        {
+            Text = "Date Folders:",
+            Location = new Point(150, 60), // Position above clbDateFolders
+            AutoSize = true
+        };
+
+        // Add labels to the form
+        this.Controls.Add(lblFolderPath);
+        this.Controls.Add(lblStartEventID);
+        this.Controls.Add(lblEndEventID);
+        this.Controls.Add(lblCameraName);
+        this.Controls.Add(lblDateFolders);
+
 
         this.Controls.Add(clbDateFolders);
         this.Controls.Add(btnSelectFolder);
