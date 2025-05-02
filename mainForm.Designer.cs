@@ -233,10 +233,46 @@ partial class mainForm
                     SizeMode = PictureBoxSizeMode.StretchImage,
                     Width = 90,
                     Height = 120,
-                    Tag = videoPath
+                    Tag = videoPath // Store the VideoPath in the Tag property for playback
                 };
 
-                pictureBox.Click += (s, e) => PlayVideo((string)pictureBox.Tag);
+                // Add a context menu for right-click
+                ContextMenuStrip contextMenu = new ContextMenuStrip();
+                ToolStripMenuItem copyMenuItem = new ToolStripMenuItem("Copy Event Folder");
+                //copyMenuItem.Click += (s, e) => Clipboard.SetText(eventFolder); // Copy eventFolder to clipboard
+                copyMenuItem.Click += (s, e) =>
+                {
+                    Clipboard.SetText(eventFolder);
+                    if (Directory.Exists(eventFolder))
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = eventFolder,
+                            UseShellExecute = true,
+                            Verb = "open"
+                        });
+                    }
+                };
+                contextMenu.Items.Add(copyMenuItem);
+
+                // Show the context menu on right-click
+                pictureBox.MouseUp += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Right)
+                    {
+                        contextMenu.Show(pictureBox, e.Location);
+                    }
+                };
+
+                // Add a click event to play the video on left-click
+                pictureBox.MouseClick += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Left)
+                    {
+                        PlayVideo((string)pictureBox.Tag); // Use the videoPath stored in the Tag
+                    }
+                };
+
                 return pictureBox;
             }
         }
