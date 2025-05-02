@@ -152,28 +152,49 @@ partial class mainForm
 
         flowLayoutPanelThumbnails.Controls.Clear();
 
-        for (int i = evStart; i <= evEnd; i++)
+        //for (int i = evStart; i <= evEnd; i++)
+        //{
+        //    string eventFolder = Path.Combine(rFolder, i.ToString());
+        //    string videoPath = Path.Combine(eventFolder, $"{i}-video.mp4");
+        //    if (File.Exists(videoPath))
+        //    {
+        //        PictureBox pictureBox = CreateThumbnail(videoPath, eventFolder, $"{i}.png");
+        //        if (pictureBox != null)
+        //        {
+        //            flowLayoutPanelThumbnails.Controls.Add(pictureBox);
+        //        }
+        //    }
+        //}
+
+        foreach(var dateFolder in selectedDateFolders)
         {
-            string eventFolder = Path.Combine(rFolder, i.ToString());
-            string videoPath = Path.Combine(eventFolder, $"{i}-video.mp4");
-
-
-            if (File.Exists(videoPath))
+            foreach (var eventID in dateFolder.sfEvents)
             {
-                PictureBox pictureBox = CreateThumbnail(videoPath, eventFolder, $"{i}.png");
-
-                if (pictureBox != null)
+                if (int.TryParse(eventID, out int eventIDInt) && (eventIDInt < evStart || eventIDInt > evEnd))
                 {
-                    flowLayoutPanelThumbnails.Controls.Add(pictureBox);
+                    continue; // Skip this event ID if it's outside the range
+                }
+                string eventFolder = Path.Combine(dateFolder.Path, eventID);
+                string videoPath = Path.Combine(eventFolder, $"{eventID}-video.mp4");
+                if (File.Exists(videoPath))
+                {
+                    int evInt = int.TryParse(eventID, out int eventIDInt2) ? eventIDInt2 : 0;
+                    PictureBox pictureBox = CreateThumbnail(videoPath, eventFolder, evInt);
+                    if (pictureBox != null)
+                    {
+                        flowLayoutPanelThumbnails.Controls.Add(pictureBox);
+                    }
                 }
             }
         }
+
     }
 
-    private PictureBox CreateThumbnail(string videoPath, string eventFolder, string tnailName)
+    private PictureBox CreateThumbnail(string videoPath, string eventFolder, int eventID)
     {
         try
         {
+            string tnailName = $"{eventID}.png";
             //string thumbnailPath = Path.Combine(eventFolder, "alarm.jpg");
             //string thumbnailPath = Path.Combine(eventFolder, "snapshot-48x64.jpg");
             //string thumbnailPath = Path.Combine(eventFolder, "snapshot.jpg");
