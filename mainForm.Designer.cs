@@ -9,6 +9,7 @@ using NReco.VideoConverter;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using YamlDotNet.Serialization;
 
 
 namespace zmBrowse;
@@ -18,6 +19,7 @@ partial class mainForm
 
     private string rFolder;
     private int evStart, evEnd;
+    private AppSettings settings;
 
     Button btnSelectFolder;
     Button btnGenerateThumbnails;
@@ -29,7 +31,7 @@ partial class mainForm
     FlowLayoutPanel flowLayoutPanelThumbnails;
     //List<string> selectedDateFolders;
     List<DateFolderStructure> selectedDateFolders = new List<DateFolderStructure>();
-    ILoggerFactory factory;
+    //ILoggerFactory factory;
     ILogger logger;
 
     /// <summary>
@@ -41,6 +43,7 @@ partial class mainForm
     public mainForm(ILogger logger)
     {
         this.logger = logger;
+        settings = new AppSettings(logger);
         InitializeComponent();
     }
 
@@ -84,15 +87,15 @@ partial class mainForm
         {
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                ProcessSelectedFolder_Core(dialog);
+                ProcessRootFolder_Core(dialog);
             }
         }
     }
 
-    private void ProcessSelectedFolder_Core(FolderBrowserDialog dialog)
+    private void ProcessRootFolder_Core(FolderBrowserDialog dialog)
     {
         if (dialog == null)
-            rFolder = "\\\\192.168.4.5\\ZM_Events";
+            rFolder = settings.DefaultFolderPath;
         else if (string.IsNullOrEmpty(dialog.SelectedPath))
             rFolder = System.IO.Path.GetTempPath();
         else
@@ -177,8 +180,7 @@ partial class mainForm
                 }
             }
         }
-
-    }
+            }
 
     private PictureBox CreateThumbnail(string videoPath, string eventFolder, int eventID)
     {
@@ -199,7 +201,8 @@ partial class mainForm
                 {
                     // Set up the font and brush for the text
                     Font font = new Font("Arial", 72, FontStyle.Bold);
-                    Brush brush = new SolidBrush(Color.Yellow);
+                    Color tColor = Color.FromName(settings.ThumbnailTextColor);
+                    Brush brush = new SolidBrush(tColor);
 
                     // Measure the size of the text
                     SizeF textSize = graphics.MeasureString(eventID.ToString(), font);
@@ -299,12 +302,10 @@ partial class mainForm
         UpdateSelectedDateFolders_Core(updatedCheckedItems);
     }
 
-
-
     private void UpdateSelectedDateFolders_Core(List<string> updatedCheckedItems)
     {
         int evMin = 999999;
-        int evMax = 0;
+        int evMax = 1;
 
         selectedDateFolders.Clear();
         foreach (var datefolder in updatedCheckedItems)
@@ -334,7 +335,6 @@ partial class mainForm
     }
 
 
-
     #region Windows Form Designer generated code
 
     /// <summary>
@@ -349,9 +349,9 @@ partial class mainForm
         this.Size = new Size(800, 800);
 
         // Initialize buttons manually
-        btnSelectFolder = new Button { Text = "Select Zone-Minder Folder", Location = new Point(10, 30) };
-        btnGenerateThumbnails = new Button { Text = "Generate Thumbnails", Location = new Point(10, 210) };
-        txtFolderPath = new TextBox { Location = new Point(110, 32), Width = 500, ReadOnly = true, Text = "\\\\192.168.4.5\\ZM_Events" };
+        btnSelectFolder = new Button { Text = "Zone-Minder Folder", Location = new Point(10, 30), Size = new Size(160,25) };
+        btnGenerateThumbnails = new Button { Text = "Generate Thumbnails", Location = new Point(10, 210), Size = new Size(160, 25) };
+        txtFolderPath = new TextBox { Location = new Point(220, 32), Width = 400, ReadOnly = true, Text = settings.DefaultFolderPath };
         numericUpDownStart = new NumericUpDown { Location = new Point(20, 180), Size = new Size(120, 30), Minimum = 1, Maximum = 999999, Value = 76868 };
         numericUpDownEnd = new NumericUpDown { Location = new Point(220, 180), Size = new Size(120, 30), Minimum = 1, Maximum = 999999, Value = 76894 };
         flowLayoutPanelThumbnails = new FlowLayoutPanel
@@ -367,7 +367,7 @@ partial class mainForm
             Width = 120,                  
             DropDownStyle = ComboBoxStyle.DropDownList // Prevent manual text entry
         };
-        comboBoxCameraNameFolder.Items.Add("1");
+        comboBoxCameraNameFolder.Items.Add(settings.DefaultCameraName);
         comboBoxCameraNameFolder.SelectedIndex = 0;
 
         clbDateFolders = new CheckedListBox
@@ -383,7 +383,7 @@ partial class mainForm
         Label lblFolderPath = new Label
         {
             Text = "Folder Path:",
-            Location = new Point(110, 15), // Position above txtFolderPath
+            Location = new Point(220, 15), // Position above txtFolderPath
             AutoSize = true
         };
 
@@ -439,7 +439,7 @@ partial class mainForm
         btnSelectFolder.Click += BtnSelectFolder_Click;
         btnGenerateThumbnails.Click += BtnGenerateThumbnails_Click;
 
-        ProcessSelectedFolder_Core(null); // Call the method to initialize the folder structure
+        ProcessRootFolder_Core(null); // Call the method to initialize the folder structure
     }
 
     #endregion

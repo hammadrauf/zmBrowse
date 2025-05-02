@@ -6,8 +6,8 @@ namespace zmBrowse;
 
 class Program
 {
-    private static ILoggerFactory factory;
-    private static ILogger logger;
+    private static ILoggerFactory factory = null!;
+    private static ILogger logger = null!;
 
 
     /// <summary>
