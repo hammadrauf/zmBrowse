@@ -136,10 +136,11 @@ partial class mainForm
                         clbDateFolders.SetItemChecked(clbDateFolders.Items.Count-1, true);
                     }
 
-                    // Store selected folder names in a collection for further processing
-                    UpdateSelectedDateFolders();
+                    // Get the current checked items
+                    var checkedItems = clbDateFolders.CheckedItems.Cast<string>().ToList();
+                    // Call the core method
+                    UpdateSelectedDateFolders_Core(checkedItems);
                 }
-
             }
         }
     }
@@ -205,13 +206,35 @@ partial class mainForm
         Process.Start(new ProcessStartInfo(videoPath) { UseShellExecute = true });
     }
 
-    private void UpdateSelectedDateFolders()
+    private void UpdateSelectedDateFolders_Handler(object sender, ItemCheckEventArgs e)
+    {
+        // Create a temporary list to reflect the updated checked state
+        var updatedCheckedItems = clbDateFolders.CheckedItems.Cast<string>().ToList();
+
+        // Add or remove the item being checked/unchecked
+        string currentItem = clbDateFolders.Items[e.Index].ToString();
+        if (e.NewValue == CheckState.Checked && !updatedCheckedItems.Contains(currentItem))
+        {
+            updatedCheckedItems.Add(currentItem);
+        }
+        else if (e.NewValue == CheckState.Unchecked && updatedCheckedItems.Contains(currentItem))
+        {
+            updatedCheckedItems.Remove(currentItem);
+        }
+
+        // Call the core method
+        UpdateSelectedDateFolders_Core(updatedCheckedItems);
+    }
+
+
+
+    private void UpdateSelectedDateFolders_Core(List<string> updatedCheckedItems)
     {
         int evMin = 999999;
         int evMax = 0;
 
         selectedDateFolders.Clear();
-        foreach (var datefolder in clbDateFolders.CheckedItems.Cast<string>().ToList())
+        foreach (var datefolder in updatedCheckedItems)
         {
             string dateFolderPath = Path.Combine(rFolder, comboBoxCameraNameFolder.SelectedItem?.ToString(), datefolder);
             string[] subFolders = Directory.GetDirectories(dateFolderPath);
@@ -219,10 +242,9 @@ partial class mainForm
 
             if (folderNames.Count > 0)
             {
-                //if first element to int is lower then evMin
+                // Update evMin and evMax based on folder names
                 if (int.TryParse(folderNames[0], out int firstEventID) && firstEventID < evMin)
                     evMin = firstEventID;
-                //if last element to int is higher then evMax
                 if (int.TryParse(folderNames[folderNames.Count - 1], out int lastEventID) && lastEventID > evMax)
                     evMax = lastEventID;
             }
@@ -230,14 +252,14 @@ partial class mainForm
             selectedDateFolders.Add(new DateFolderStructure(datefolder, dateFolderPath, folderNames));
         }
 
-        //Update the values for numericUpDownStart and numericUpDownEnd
+        // Update the values for numericUpDownStart and numericUpDownEnd
         if (selectedDateFolders.Count > 0)
         {
-            // Set the values to the first and last event IDs
             numericUpDownStart.Value = evMin;
             numericUpDownEnd.Value = evMax;
         }
     }
+
 
 
     #region Windows Form Designer generated code
@@ -282,7 +304,7 @@ partial class mainForm
             CheckOnClick = true 
         };
 
-        clbDateFolders.ItemCheck += (s, e) => UpdateSelectedDateFolders();
+        clbDateFolders.ItemCheck += (s, e) => UpdateSelectedDateFolders_Handler(s, e);
 
         // Label for txtFolderPath
         Label lblFolderPath = new Label
