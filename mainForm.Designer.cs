@@ -49,6 +49,8 @@ partial class mainForm
     {
         this.logger = logger;
         settings = new AppSettings(logger);
+        string iconFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon-zmBrowse-32.ico");
+        this.Icon = new Icon(iconFilePath);
         InitializeComponent();
     }
 
@@ -473,6 +475,7 @@ partial class mainForm
         this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
         this.Text = "ZoneMinder Thumbnail Browser";
         this.Size = new Size(800, 800);
+        
 
         // Initialize buttons manually
         btnSelectFolder = new Button { Text = "Zone-Minder Folder", Location = new Point(10, 30), Size = new Size(160,25) };

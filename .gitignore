@@ -455,3 +455,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# zmBrowse Specific Ignores
+zmBrowse_Pub/
+nsis/zmBrowse-Installer.exe
+icons/icon-zmBrowse-512.*
