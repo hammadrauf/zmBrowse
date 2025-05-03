@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using YamlDotNet.Serialization;
+using System.Timers;
 
 
 namespace zmBrowse;
@@ -23,15 +24,19 @@ partial class mainForm
 
     Button btnSelectFolder;
     Button btnGenerateThumbnails;
+    Button btnCheckAllDates;
+    Button btnUncheckAllDates;
     TextBox txtFolderPath;
     NumericUpDown numericUpDownStart;
     NumericUpDown numericUpDownEnd;
     ComboBox comboBoxCameraNameFolder;
     CheckedListBox clbDateFolders;
     FlowLayoutPanel flowLayoutPanelThumbnails;
-    //List<string> selectedDateFolders;
     List<DateFolderStructure> selectedDateFolders = new List<DateFolderStructure>();
-    //ILoggerFactory factory;
+    private StatusStrip statusBar;
+    private ToolStripStatusLabel statusArea;
+    private ToolStripStatusLabel messageArea;
+    private System.Timers.Timer messageClearTimer; // Timer to clear the message after 3 seconds
     ILogger logger;
 
     /// <summary>
@@ -83,13 +88,20 @@ partial class mainForm
 
     private void BtnSelectFolder_Click(object sender, EventArgs e)
     {
+        SetStatus("Selecting folder...");
         using (FolderBrowserDialog dialog = new FolderBrowserDialog())
         {
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 ProcessRootFolder_Core(dialog);
+                SetMessage($"Folder selected: {dialog.SelectedPath}");
+            }
+            else
+            {
+                SetMessage("Folder selection canceled.");
             }
         }
+        SetStatus("Ready");
     }
 
     private void ProcessRootFolder_Core(FolderBrowserDialog dialog)
@@ -152,35 +164,88 @@ partial class mainForm
         }
     }
 
-    private void BtnGenerateThumbnails_Click(object sender, EventArgs e)
+    private async void BtnGenerateThumbnails_Click(object sender, EventArgs e)
     {
+        // Set the status to indicate the start of the process
+        SetStatus("Generating thumbnails...");
+        SetMessage("Initializing thumbnail generation...");
+
         evStart = (int)numericUpDownStart.Value;
         evEnd = (int)numericUpDownEnd.Value;
 
         flowLayoutPanelThumbnails.Controls.Clear();
 
-        foreach(var dateFolder in selectedDateFolders)
+        int totalThumbnails = 0;
+        int skippedThumbnails = 0;
+        List<PictureBox> tnList = null;
+
+        await Task.Run(() =>
         {
-            foreach (var eventID in dateFolder.sfEvents)
+            tnList = new List<PictureBox>();
+            selectedDateFolders = selectedDateFolders.OrderBy(x => x.Name).ToList();
+            foreach (var dateFolder in selectedDateFolders)
             {
-                if (int.TryParse(eventID, out int eventIDInt) && (eventIDInt < evStart || eventIDInt > evEnd))
+                foreach (var eventID in dateFolder.sfEvents)
                 {
-                    continue; // Skip this event ID if it's outside the range
-                }
-                string eventFolder = Path.Combine(dateFolder.Path, eventID);
-                string videoPath = Path.Combine(eventFolder, $"{eventID}-video.mp4");
-                if (File.Exists(videoPath))
-                {
-                    int evInt = int.TryParse(eventID, out int eventIDInt2) ? eventIDInt2 : 0;
-                    PictureBox pictureBox = CreateThumbnail(videoPath, eventFolder, evInt);
-                    if (pictureBox != null)
+                    if (int.TryParse(eventID, out int eventIDInt) && (eventIDInt < evStart || eventIDInt > evEnd))
                     {
-                        flowLayoutPanelThumbnails.Controls.Add(pictureBox);
+                        SetMessage($"Skipping EventID: {eventIDInt}, is outside filter range");
+                        skippedThumbnails++;
+                        continue; // Skip this event ID if it's outside the range
                     }
+                    string eventFolder = Path.Combine(dateFolder.Path, eventID);
+                    string videoPath = Path.Combine(eventFolder, $"{eventID}-video.mp4");
+                    if (File.Exists(videoPath))
+                    {
+                        int evInt = int.TryParse(eventID, out int eventIDInt2) ? eventIDInt2 : 0;
+                        PictureBox pictureBox = CreateThumbnail(videoPath, eventFolder, evInt);
+                        if (pictureBox != null)
+                        {
+                            //flowLayoutPanelThumbnails.Controls.Add(pictureBox);
+                            tnList.Add(pictureBox);
+                            totalThumbnails++;
+                            SetMessage($"Created thumbnail for EventID: {evInt}");
+                        }
+                        else
+                        {
+                            this.logger.LogWarning($"Thumbnail creation failed for {videoPath}");
+                            SetMessage($"Failed to create thumbnail for EventID: {eventID}");
+                            skippedThumbnails++;
+                        }
+                    }
+                    else
+                    {
+                        this.logger.LogWarning($"For EventID: {eventID}, Video file was not found: {videoPath}");
+                        SetMessage($"For EventID: {eventID}, Video file was not found: {videoPath}");
+                        skippedThumbnails++;
+                    }
+
+                    // Yield control to allow other threads (like the timer) to execute
+                    Task.Delay(10).Wait();
                 }
+            }
+        });
+        if (tnList != null)
+        {
+            foreach (var pictureBox in tnList)
+            {
+                flowLayoutPanelThumbnails.Controls.Add(pictureBox);
             }
         }
-            }
+        // Update the status and message based on the results
+        if (totalThumbnails > 0)
+        {
+            SetStatus("Ready.");
+            SetMessage($"Generated {totalThumbnails} thumbnails. Skipped {skippedThumbnails} events.");
+            this.logger.LogInformation($"Generated {totalThumbnails} thumbnails. Skipped {skippedThumbnails} events.");
+        }
+        else
+        {
+            SetStatus("Ready.");
+            SetMessage($"No valid events found in the selected range. Skipped {skippedThumbnails} events.");
+            this.logger.LogWarning($"No valid events found in the selected range. Skipped {skippedThumbnails} events.");
+        }
+    }
 
     private PictureBox CreateThumbnail(string videoPath, string eventFolder, int eventID)
     {
@@ -302,16 +367,25 @@ partial class mainForm
         UpdateSelectedDateFolders_Core(updatedCheckedItems);
     }
 
-    private void UpdateSelectedDateFolders_Core(List<string> updatedCheckedItems)
+    private async void UpdateSelectedDateFolders_Core(List<string> updatedCheckedItems)
     {
         int evMin = 999999;
         int evMax = 1;
 
-        selectedDateFolders.Clear();
+        await Task.Run(() =>
+        {
+            selectedDateFolders.Clear();
+        });
+        Task.Delay(5).Wait();
         foreach (var datefolder in updatedCheckedItems)
         {
             string dateFolderPath = Path.Combine(rFolder, comboBoxCameraNameFolder.SelectedItem?.ToString(), datefolder);
-            string[] subFolders = Directory.GetDirectories(dateFolderPath);
+            string[] subFolders = null;
+            await Task.Run(() =>
+            {
+                subFolders = Directory.GetDirectories(dateFolderPath);
+            });
+            Task.Delay(5).Wait();
             List<string> folderNames = subFolders.Select(Path.GetFileName).OrderBy(name => name).ToList();
 
             if (folderNames.Count > 0)
@@ -334,6 +408,58 @@ partial class mainForm
         }
     }
 
+    private void SetStatus(string status)
+    {
+        if (statusArea != null)
+        {
+            statusArea.Text = status;
+        }
+    }
+
+    private void SetMessage(string message)
+    {
+        if (messageArea != null)
+        {
+            messageArea.Text = message;
+            if (messageClearTimer != null)
+            {
+                messageClearTimer.Stop(); // Stop any existing timer
+                messageClearTimer.Start(); // Start the timer for 3 seconds
+            }
+        }
+    }
+
+    private void ClearMessage()
+    {
+        if (messageArea != null)
+        {
+            messageArea.Text = "";
+        }
+        if (messageClearTimer != null)
+            messageClearTimer.Stop();
+    }
+
+    private void OnClick_CheckAllDates(object sender, EventArgs e)
+    {
+        SetStatus("Checking all dates...");
+        for (int i = 0; i < clbDateFolders.Items.Count; i++)
+        {
+            clbDateFolders.SetItemChecked(i, true);
+        }
+        UpdateSelectedDateFolders_Core(clbDateFolders.CheckedItems.Cast<string>().ToList());
+        SetStatus("Ready.");
+    }
+
+    private void OnClick_UncheckAllDates(object sender, EventArgs e)
+    {
+        SetStatus("Unchecking all dates...");
+        for (int i = 0; i < clbDateFolders.Items.Count; i++)
+        {
+            clbDateFolders.SetItemChecked(i, false);
+        }
+        UpdateSelectedDateFolders_Core(clbDateFolders.CheckedItems.Cast<string>().ToList());
+        SetStatus("Ready.");
+    }
 
     #region Windows Form Designer generated code
 
@@ -379,6 +505,13 @@ partial class mainForm
 
         clbDateFolders.ItemCheck += (s, e) => UpdateSelectedDateFolders_Handler(s, e);
 
+        btnCheckAllDates = new Button { Text = "Check All Dates", Location = new Point(360, 80), Size = new Size(160, 25) };
+        btnUncheckAllDates = new Button { Text = "Uncheck All Dates", Location = new Point(360, 106), Size = new Size(160, 25) };
+
+        btnCheckAllDates.Click += (s, e) => OnClick_CheckAllDates(s, e);
+
+        btnUncheckAllDates.Click += (s, e) => OnClick_UncheckAllDates(s, e);
+
         // Label for txtFolderPath
         Label lblFolderPath = new Label
         {
@@ -419,13 +552,62 @@ partial class mainForm
             AutoSize = true
         };
 
+        // Initialize the StatusStrip
+        statusBar = new StatusStrip
+        {
+            Dock = DockStyle.Bottom,
+            SizingGrip = false, // Remove the resizing grip for a cleaner look
+            Padding = new Padding(2), // Add padding around the StatusStrip
+            BackColor = SystemColors.ControlLight // Set a light background color for contrast
+        };
+        statusBar.Dock = DockStyle.Bottom;
+
+        // Initialize the StatusArea
+        statusArea = new ToolStripStatusLabel
+        {
+            Text = "Ready",
+            Width = (int)(this.Width * 0.3), // 30% of the form width
+            TextAlign = ContentAlignment.MiddleLeft,
+            Spring = false,
+            BorderSides = ToolStripStatusLabelBorderSides.All, // Add borders on all sides
+            BorderStyle = Border3DStyle.SunkenOuter, // Sunken border style
+            Padding = new Padding(5), // Add padding inside the box
+            Margin = new Padding(2) // Add margin between the box and the StatusStrip
+        };
+
+        // Initialize the MessageArea
+        messageArea = new ToolStripStatusLabel
+        {
+            Text = "",
+            Width = (int)(this.Width * 0.7), // 70% of the form width
+            TextAlign = ContentAlignment.MiddleLeft,
+            Spring = true,
+            BorderSides = ToolStripStatusLabelBorderSides.All, // Add borders on all sides
+            BorderStyle = Border3DStyle.SunkenOuter, // Sunken border style
+            Padding = new Padding(5), // Add padding inside the box
+            Margin = new Padding(2) // Add margin between the box and the StatusStrip
+        };
+
+        // Add the labels to the StatusStrip
+        statusBar.Items.Add(statusArea);
+        statusBar.Items.Add(messageArea);
+
+        // Initialize the messageClearTimer
+        messageClearTimer = new System.Timers.Timer(3000); // 3 seconds
+        messageClearTimer.Elapsed += (s, e) =>
+        {
+            ClearMessage(); // Clear the message when the timer elapses
+        };
+        messageClearTimer.AutoReset = true; // Ensure the timer runs multiple times
+
         // Add labels to the form
         this.Controls.Add(lblFolderPath);
         this.Controls.Add(lblStartEventID);
         this.Controls.Add(lblEndEventID);
         this.Controls.Add(lblCameraName);
         this.Controls.Add(lblDateFolders);
-
+        this.Controls.Add(btnCheckAllDates);
+        this.Controls.Add(btnUncheckAllDates);
 
         this.Controls.Add(clbDateFolders);
         this.Controls.Add(btnSelectFolder);
@@ -435,6 +617,7 @@ partial class mainForm
         this.Controls.Add(numericUpDownEnd);
         this.Controls.Add(flowLayoutPanelThumbnails);
         this.Controls.Add(comboBoxCameraNameFolder);
+        this.Controls.Add(statusBar);
 
         btnSelectFolder.Click += BtnSelectFolder_Click;
         btnGenerateThumbnails.Click += BtnGenerateThumbnails_Click;
