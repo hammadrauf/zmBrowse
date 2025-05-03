@@ -26,6 +26,7 @@ partial class mainForm
     Button btnGenerateThumbnails;
     Button btnCheckAllDates;
     Button btnUncheckAllDates;
+    Button btnEditSettings;
     TextBox txtFolderPath;
     NumericUpDown numericUpDownStart;
     NumericUpDown numericUpDownEnd;
@@ -463,6 +464,15 @@ partial class mainForm
         SetStatus("Ready.");
     }
 
+    private void BtnEditSettings_Click(object sender, EventArgs e)
+    {
+        using (var settingsForm = new SettingsForm(settings))
+        {
+            settingsForm.ShowDialog();
+        }
+    }
+
+
     #region Windows Form Designer generated code
 
     /// <summary>
@@ -602,6 +612,16 @@ partial class mainForm
             ClearMessage(); // Clear the message when the timer elapses
         };
         messageClearTimer.AutoReset = true; // Ensure the timer runs multiple times
+
+        btnEditSettings = new Button
+        {
+            Text = "Edit Settings",
+            Location = new Point(521, 80),
+            Size = new Size(160, 25)
+        };
+        btnEditSettings.Click += BtnEditSettings_Click;
+
+        this.Controls.Add(btnEditSettings);
 
         // Add labels to the form
         this.Controls.Add(lblFolderPath);
