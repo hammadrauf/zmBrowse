@@ -50,7 +50,7 @@ namespace zmBrowse
             appSettings.ThumbnailTextColor = cmbThumbnailTextColor.SelectedItem?.ToString() ?? "White";
 
             SaveSettingsToFile();
-            MessageBox.Show("Settings saved successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Settings saved successfully. The Application must be restarted for settings to take affect.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
 
