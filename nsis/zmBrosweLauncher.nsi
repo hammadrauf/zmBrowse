@@ -12,7 +12,7 @@
 
   ;Name and file
   Name "zmBrowse"
-  OutFile "zmBrowse-Installer.exe"
+  OutFile "zmBrowse-Installer-win.exe"
   Unicode True
 
   ;Default installation folder

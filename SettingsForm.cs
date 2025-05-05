@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using YamlDotNet.Serialization;
+using System.Reflection;
 
 namespace zmBrowse
 {
@@ -22,6 +23,7 @@ namespace zmBrowse
             InitializeComponent();
             this.appSettings = appSettings;
             settingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings-zmbrowse.yml");
+            PopulateThumbnailTextColorComboBox();
             LoadSettings();
         }
 
@@ -72,6 +74,26 @@ namespace zmBrowse
         {
             this.Close();
         }
+
+        private void PopulateThumbnailTextColorComboBox()
+        {
+            // Get all predefined colors from the System.Drawing.Color structure
+            var colors = typeof(Color).GetProperties(BindingFlags.Static | BindingFlags.Public)
+                                       .Where(p => p.PropertyType == typeof(Color))
+                                       .Select(p => p.Name)
+                                       .ToList();
+
+            // Bind the colors to the ComboBox
+            cmbThumbnailTextColor.DataSource = colors;
+
+            // Optionally, set the selected value to the current ThumbnailTextColor
+            var appSettings = new AppSettings(); // Replace with your actual AppSettings instance
+            if (colors.Contains(appSettings.ThumbnailTextColor))
+            {
+                cmbThumbnailTextColor.SelectedItem = appSettings.ThumbnailTextColor;
+            }
+        }
+
 
     }
 
