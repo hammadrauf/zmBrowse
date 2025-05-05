@@ -15,7 +15,7 @@ and on MacOS can be most probably used by using Wine and Rosetta.
 
 ## How To Configure ZoneMinder for use with zmBrowse
 1. Install ZoneMinder on your server.
-	- 1. ZoneMinder Installation - ![Official Installation Guide](https://zoneminder.readthedocs.io/en/latest/installationguide/index.html)	
+	- 1. ZoneMinder Installation - [Official Installation Guide](https://zoneminder.readthedocs.io/en/latest/installationguide/index.html)	
 1. On ZoneMinder Options page go to Config tab.
 	a. Set the following options:
 		- EVENT_IMAGE_DIGITS: 5
@@ -183,8 +183,8 @@ user01@someserver:~$
 ```
 
 ## How To Use zmBrowse
-1. Install zmBrowse on your Windows 10/11 PC or Linux GUI/Desktop (with Wine ![https://www.winehq.org/](https://www.winehq.org/) )
-	- Download the latest installer named "zmBrowse-Installer-win-*.exe" from ![Release Page Link](https://github.com/hammadrauf/zmBrowse/releases)
+1. Install zmBrowse on your Windows 10/11 PC or Linux GUI/Desktop (with Wine [https://www.winehq.org/](https://www.winehq.org/) )
+	- Download the latest installer named "zmBrowse-Installer-win-*.exe" from [Release Page Link](https://github.com/hammadrauf/zmBrowse/releases)
 1. Run the installer and follow the on screen instructions.
 1. Once installed, run the zmBrowse application.
 1. Click on the "Settings" button and enter the following details:
