@@ -1,4 +1,4 @@
 ﻿zmbrowse:
-  DefaultFolderPath: "\\\\192.168.4.5\\ZM_Events"
+  DefaultFolderPath: "\\"
   DefaultCameraName: "1"
   ThumbnailTextColor: "Yellow"
