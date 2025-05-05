@@ -9,7 +9,9 @@ Zone-Minder (Security Camera Station Software) Events Browser
 ![Image 3](https://github.com/hammadrauf/zmBrowse/blob/main/images/screenshot-mouse-clicks.png?raw=true)
 
 ## Description
-TBD
+zmBroswe is a helper application to be used in tandem with a Zone-Minder installation on a local area network.
+zmBroswe is primarily written for Windows 10/11 computers, but it can be executed on Linux GUI Desktops using Wine,
+and on MacOS can be most probably used by using Wine and Rosetta.
 
 ## How To Configure ZoneMinder for use with zmBrowse
 1. Install ZoneMinder on your server.
