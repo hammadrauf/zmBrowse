@@ -1,17 +1,19 @@
 ﻿# zmBrowse
 Zone-Minder (Security Camera Station Software) Events Browser
 
+## Description
+zmBroswe (zm - Event Browser) is a free and Open-Source helper application to be used in tandem with a Zone-Minder installation on a local area network.
+It allows one to view all the events recorded by Zone-Minder on a local area network without having to log into the Zone-Minder web interface.
+It uses zmBrowse generated thumbnails from the recorded event videos to display the events in a grid format.
+zmBroswe is primarily written for Windows 10/11 computers, but it can be used on Linux GUI Desktops using Wine,
+and on probably on MacOS (it can be most probably be used by using Wine and Rosetta).
+
 ## Images
 ![Image 1](https://github.com/hammadrauf/zmBrowse/blob/main/images/screenshot-generating.png?raw=true)
 
 ![Image 2](https://github.com/hammadrauf/zmBrowse/blob/main/images/screenshot-ready.png?raw=true)
 
 ![Image 3](https://github.com/hammadrauf/zmBrowse/blob/main/images/screenshot-mouse-clicks.png?raw=true)
-
-## Description
-zmBroswe is a helper application to be used in tandem with a Zone-Minder installation on a local area network.
-zmBroswe is primarily written for Windows 10/11 computers, but it can be executed on Linux GUI Desktops using Wine,
-and on MacOS can be most probably used by using Wine and Rosetta.
 
 ## How To Configure ZoneMinder for use with zmBrowse
 1. Install ZoneMinder on your server.
