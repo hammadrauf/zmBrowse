@@ -11,11 +11,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using YamlDotNet.Serialization;
 using System.Timers;
+using System.Runtime.InteropServices;
 
 namespace zmBrowse
 {
 	public partial class mainForm : Form
 	{
+		private OSPlatform osPform;
+
 		public mainForm()
 		{
 			InitializeComponent();
@@ -24,7 +27,18 @@ namespace zmBrowse
 		public mainForm(ILogger logger)
 		{
 			this.logger = logger;
-			settings = new AppSettings(logger);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                this.osPform = OSPlatform.Windows;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                this.osPform = OSPlatform.Linux;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                this.osPform = OSPlatform.OSX;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+                this.osPform = OSPlatform.FreeBSD;
+            else
+                this.osPform = OSPlatform.Create("Unknown");
+            this.logger.LogInformation($"OS-Platform: {this.osPform}");
+            settings = new AppSettings(logger);
 			string iconFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon-zmBrowse-32.ico");
 			this.Icon = new Icon(iconFilePath);
 			InitializeComponent();
@@ -259,15 +273,32 @@ namespace zmBrowse
 					string modifiedThumbnailPath = Path.Combine(System.IO.Path.GetTempPath(), $"modified_{tnailName}");
 					bitmapWithText.Save(modifiedThumbnailPath, ImageFormat.Png);
 
-					// Create the PictureBox with the modified image
-					PictureBox pictureBox = new PictureBox
-					{
-						Image = Image.FromFile(modifiedThumbnailPath),
-						SizeMode = PictureBoxSizeMode.StretchImage,
-						Width = 90,
-						Height = 120,
-						Tag = videoPath // Store the VideoPath in the Tag property for playback
-					};
+					string tagForOS = videoPath;
+                    if (osPform == OSPlatform.Windows)
+                    {
+						tagForOS = $"{videoPath}";
+                    }
+                    else if (osPform == OSPlatform.Linux)
+                    {
+                        tagForOS = $"xdg-open '{videoPath}'";
+                    }
+					else if (osPform == OSPlatform.OSX)
+                    {
+                        tagForOS = $"open '{videoPath}'";
+                    }
+                    else if (osPform == OSPlatform.FreeBSD)
+                    {
+                        tagForOS = $"mplayer '{videoPath}'";
+                    }
+                    // Create the PictureBox with the modified image
+                    PictureBox pictureBox = new PictureBox
+						{
+							Image = Image.FromFile(modifiedThumbnailPath),
+							SizeMode = PictureBoxSizeMode.StretchImage,
+							Width = 90,
+							Height = 120,
+							Tag = tagForOS // Store the VideoPath in the Tag property for playback
+						};
 
 					// Add a context menu for right-click
 					ContextMenuStrip contextMenu = new ContextMenuStrip();

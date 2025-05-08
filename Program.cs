@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace zmBrowse;
 
@@ -21,11 +22,14 @@ class Program
         factory = LoggerFactory.Create(static builder =>
         {
             builder
-                .AddConsole()
-                .SetMinimumLevel(LogLevel.Debug);
+                    .AddFilter("Microsoft", LogLevel.Warning)
+                    .AddFilter("System", LogLevel.Warning)
+                    .AddFilter("zmBrowse.Program", LogLevel.Debug)
+                    .AddConsole()
+                    .AddEventLog();
         });
         logger = factory.CreateLogger<Program>();
-        logger.LogDebug("Started Logger for Program.");
+        logger.LogDebug("==> Started Logger for Program zmBrowse.....");
 
         ApplicationConfiguration.Initialize();
         Application.Run(new mainForm(logger));
