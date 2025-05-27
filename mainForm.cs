@@ -46,7 +46,7 @@ namespace zmBrowse
 			comboBoxCameraNameFolder.Items.Add(settings.DefaultCameraName);
 			comboBoxCameraNameFolder.SelectedIndex = 0;		
 			// Initialize the messageClearTimer
-			messageClearTimer = new System.Timers.Timer(3000); // 3 seconds
+			messageClearTimer = new System.Timers.Timer(6000); // 6 seconds
 			messageClearTimer.Elapsed += (s, e) =>
 			{
 				ClearMessage(); // Clear the message when the timer elapses
@@ -104,12 +104,37 @@ namespace zmBrowse
 			txtFolderPath.Text = rFolder;
 
 			// Get all sub-folder names, sort them, and populate the ComboBox
-			string[] subFolders = Directory.GetDirectories(rFolder);
-			List<string> folderNames = subFolders.Select(Path.GetFileName).OrderBy(name => name).ToList();
-
-			comboBoxCameraNameFolder.Items.Clear(); // Clear existing items
-			comboBoxCameraNameFolder.Items.AddRange(folderNames.ToArray());
-
+			string[] subFolders;
+			try
+			{
+                subFolders = Directory.GetDirectories(rFolder);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                this.logger.LogError($"Access denied to folder: {rFolder}. {ex.Message}");
+                SetMessage($"Access denied to folder: {rFolder}. Please check permissions.");
+                return;
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                this.logger.LogError($"Directory not found: {rFolder}. {ex.Message}");
+                SetMessage($"Directory not found: {rFolder}. Please check the path.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError($"An error occurred while accessing the folder: {rFolder}. {ex.Message}");
+                SetMessage($"An error occurred while accessing the folder: {rFolder}. Please try again.");
+                return;
+            }
+			//subFolders = Directory.GetDirectories(rFolder);
+			List<string> folderNames = null;
+			if (subFolders != null)
+			{
+				folderNames = subFolders.Select(Path.GetFileName).OrderBy(name => name).ToList();
+				comboBoxCameraNameFolder.Items.Clear(); // Clear existing items
+				comboBoxCameraNameFolder.Items.AddRange(folderNames.ToArray());
+			}
 			if (folderNames.Count > 0)
 			{
 				comboBoxCameraNameFolder.SelectedIndex = 0; // Set the first sub-folder as the default selection
